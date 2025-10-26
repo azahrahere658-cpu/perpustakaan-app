@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistem Informasi Perpustakaan</title>
+
+  <!-- Font & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    :root{
+      --bg:#f6f4fb;
+      --card:#ffffff;
+      --accent-1:#b999ff;
+      --accent-2:#8f6be6;
+      --muted:#6b587d;
+      --green:#2f9e5f;
+      --pink:#d97aa6;
+      --radius:14px;
+      --glass: rgba(255,255,255,0.6);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Poppins",system-ui,Segoe UI,Roboto,Arial;
+      background: linear-gradient(180deg,var(--bg),#fff);
+      color: #2f1f44;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Page container */
+    .wrap{max-width:1100px;margin:36px auto;padding:20px}
+    header{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:16px;padding:18px;border-radius:18px;
+      background: linear-gradient(90deg,var(--accent-1),var(--accent-2));
+      color:white;box-shadow:0 8px 30px rgba(102,73,191,0.12);
+    }
+    .brand {display:flex;flex-direction:column}
+    .brand h1{margin:0;font-size:18px;font-weight:600}
+    .brand p{margin:0;font-size:13px;opacity:0.9}
+
+    /* Controls */
+    .controls{display:flex;gap:10px;align-items:center}
+    .searchBox{display:flex;align-items:center;background:var(--card);padding:8px 12px;border-radius:12px;box-shadow:0 6px 16px rgba(98,76,178,0.05)}
+    .searchBox input{border:0;outline:0;font-size:14px;background:transparent;width:280px}
+    .select{padding:8px;border-radius:10px;border:1px solid #efe7ff;background:#fbf8ff}
+    .btn{border:0;padding:9px 12px;border-radius:10px;font-weight:600;cursor:pointer}
+    .btn-primary{background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:white;box-shadow:0 6px 18px rgba(143,107,230,0.18)}
+    .btn-ghost{background:transparent;border:1px solid rgba(0,0,0,0.06);color:var(--muted)}
+
+    /* Card main */
+    .card{margin-top:18px;background:var(--card);padding:18px;border-radius:16px;box-shadow:0 6px 20px rgba(34,21,64,0.04)}
+
+    /* Table */
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    thead th{background:linear-gradient(90deg,#f3ecff,#f7f3ff);text-align:left;padding:12px;border-radius:8px;color:var(--muted);font-weight:600}
+    th,td{padding:12px;border-bottom:1px solid #f1eef8;vertical-align:middle}
+    tbody tr:hover{background:#fbf8ff}
+    .col-actions button{margin-right:8px}
+
+    /* Status badges */
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:600;font-size:13px}
+    .badge-tersedia{background:#e9fbef;color:#1f7a43}
+    .badge-dipinjam{background:#fff0f8;color:#a73b73}
+
+    /* Modal (blur style) */
+    .modal-backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,8,30,0.36);backdrop-filter:blur(6px);z-index:60;padding:20px}
+    .modal{width:100%;max-width:620px;background:linear-gradient(180deg,rgba(255,255,255,0.92),#fff);border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(36,14,84,0.25)}
+    .modal h3{margin:0 0 8px 0}
+    .form-row{display:flex;gap:10px;margin-top:10px}
+    .form-row .col{flex:1}
+    .input, .input-sm, .select-plain {width:100%;padding:10px;border-radius:10px;border:1px solid #efe7ff;background:#fbf8ff}
+    .input-sm{padding:8px;font-size:13px}
+
+    /* small text */
+    .muted{color:var(--muted);font-size:13px}
+
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+
+    @media (max-width:900px){
+      .searchBox input{width:140px}
+      .form-row{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Sistem Informasi Perpustakaan</h1>
+        <p class="muted">Kelola koleksi, peminjaman, dan data peminjam</p>
+      </div>
+
+      <div class="controls">
+        <div class="searchBox">
+          <i class="fa fa-search" style="color:var(--muted);margin-right:8px"></i>
+          <input id="searchInput" placeholder="Cari judul atau penulis..." />
+        </div>
+
+        <select id="filterStatus" class="select">
+          <option value="all">Semua</option>
+          <option value="available">Tersedia</option>
+          <option value="borrowed">Dipinjam</option>
+        </select>
+
+        <button class="btn btn-primary" id="openAddBtn"><i class="fa fa-plus" style="margin-right:8px"></i>Tambah Buku</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:38px">No</th>
+            <th>Judul Buku</th>
+            <th>Penulis</th>
+            <th style="width:90px">Tahun</th>
+            <th style="width:120px">Status</th>
+            <th style="width:160px">Peminjam</th>
+            <th style="width:220px">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- rows by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="muted">Versi demo — data disimpan di browser (localStorage)</footer>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 id="modalTitle">Tambah Buku</h3>
+      <p class="muted" id="modalSub">Isi data buku</p>
+
+      <div style="margin-top:10px">
+        <div class="form-row">
+          <div class="col">
+            <label class="muted">Judul</label>
+            <input id="fJudul" class="input" placeholder="Contoh: Laskar Pelangi" />
+          </div>
+          <div class="col">
+            <label class="muted">Penulis</label>
+            <input id="fPenulis" class="input" placeholder="Nama penulis" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="col">
+            <label class="muted">Tahun</label>
+            <input id="fTahun" class="input-sm" placeholder="Tahun terbit" />
+          </div>
+          <div class="col">
+            <label class="muted">Status</label>
+            <select id="fStatus" class="select-plain">
+              <option value="Tersedia">Tersedia</option>
+              <option value="Dipinjam">Dipinjam</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label class="muted">Nama Peminjam (isi jika status Dipinjam)</label>
+          <input id="fPeminjam" class="input" placeholder="Contoh: Siti Zahra" />
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+          <button class="btn btn-ghost" id="btnCancel">Batal</button>
+          <button class="btn btn-primary" id="btnSave">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Default data (novel populer Indonesia)
+    const defaultBooks = [
+      {judul: 'Laskar Pelangi', penulis: 'Andrea Hirata', tahun: '2005', status: 'Tersedia', peminjam: ''},
+      {judul: 'Dilan 1990', penulis: 'Pidi Baiq', tahun: '2015', status: 'Dipinjam', peminjam: 'Rina'},
+      {judul: 'Bumi Manusia', penulis: 'Pramoedya Ananta Toer', tahun: '1980', status: 'Tersedia', peminjam: ''},
+      {judul: 'Mariposa', penulis: 'Luluk HF', tahun: '2018', status: 'Dipinjam', peminjam: 'Andi'},
+      {judul: 'Hujan', penulis: 'Tere Liye', tahun: '2016', status: 'Tersedia', peminjam: ''}
+    ];
+
+    // Keys & state
+    const LS_KEY = 'perpus_books_v1';
+    let books = JSON.parse(localStorage.getItem(LS_KEY)) || [];
+    if (!Array.isArray(books) || books.length === 0) {
+      books = defaultBooks.slice();
+      localStorage.setItem(LS_KEY, JSON.stringify(books));
+    }
+
+    // UI elems
+    const tableBody = document.getElementById('tableBody');
+    const searchInput = document.getElementById('searchInput');
+    const filterStatus = document.getElementById('filterStatus');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const openAddBtn = document.getElementById('openAddBtn');
+    const btnCancel = document.getElementById('btnCancel');
+    const btnSave = document.getElementById('btnSave');
+    const modalTitle = document.getElementById('modalTitle');
+    const fJudul = document.getElementById('fJudul');
+    const fPenulis = document.getElementById('fPenulis');
+    const fTahun = document.getElementById('fTahun');
+    const fStatus = document.getElementById('fStatus');
+    const fPeminjam = document.getElementById('fPeminjam');
+
+    // Edit state
+    let editingIndex = null;
+
+    // Render function with search & filter
+    function render() {
+      const q = (searchInput.value || '').trim().toLowerCase();
+      const filter = filterStatus.value; // all / available / borrowed
+      tableBody.innerHTML = '';
+
+      const filtered = books.filter(b => {
+        // filter status
+        if (filter === 'available' && b.status !== 'Tersedia') return false;
+        if (filter === 'borrowed' && b.status !== 'Dipinjam') return false;
+        // search by title or author
+        if (!q) return true;
+        return (b.judul + ' ' + b.penulis).toLowerCase().includes(q);
+      });
+
+      filtered.forEach((b, i) => {
+        const idx = books.indexOf(b); // original index
+        const tr = document.createElement('tr');
+
+        const statusBadge = b.status === 'Tersedia'
+          ? `<span class="badge badge-tersedia">Tersedia</span>`
+          : `<span class="badge badge-dipinjam">Dipinjam</span>`;
+
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td style="font-weight:600">${escapeHtml(b.judul)}</td>
+          <td>${escapeHtml(b.penulis)}</td>
+          <td>${escapeHtml(b.tahun)}</td>
+          <td>${statusBadge}</td>
+          <td>${b.peminjam ? escapeHtml(b.peminjam) : '-'}</td>
+          <td class="col-actions">
+            <button class="btn btn-primary" onclick="openEdit(${idx})"><i class="fa fa-pen" style="margin-right:8px"></i>Edit</button>
+            <button class="btn btn-ghost" onclick="removeBook(${idx})"><i class="fa fa-trash" style="margin-right:8px"></i>Hapus</button>
+            ${b.status === 'Tersedia'
+              ? `<button class="btn" style="background:#ffdede;color:#7a2a2a;border-radius:8px;margin-left:6px" onclick="borrowBook(${idx})"><i class="fa fa-book" style="margin-right:8px"></i>Pinjam</button>`
+              : `<button class="btn" style="background:#e8f8ee;color:#1f7a43;border-radius:8px;margin-left:6px" onclick="returnBook(${idx})"><i class="fa fa-undo" style="margin-right:8px"></i>Kembalikan</button>`}
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    // Helpers
+    function saveAll() {
+      localStorage.setItem(LS_KEY, JSON.stringify(books));
+    }
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, function (m) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m];
+      });
+    }
+
+    // Modal open for add
+    openAddBtn.addEventListener('click', () => {
+      editingIndex = null;
+      modalTitle.textContent = 'Tambah Buku';
+      fJudul.value = '';
+      fPenulis.value = '';
+      fTahun.value = new Date().getFullYear();
+      fStatus.value = 'Tersedia';
+      fPeminjam.value = '';
+      showModal();
+    });
+
+    // Modal cancel
+    btnCancel.addEventListener('click', hideModal);
+
+    // Save (add or edit)
+    btnSave.addEventListener('click', () => {
+      const judul = fJudul.value.trim();
+      const penulis = fPenulis.value.trim();
+      const tahun = fTahun.value.trim();
+      const status = fStatus.value;
+      const peminjam = fPeminjam.value.trim();
+
+      if (!judul || !penulis || !tahun) {
+        alert('Judul, penulis, dan tahun wajib diisi.');
+        return;
+      }
+
+      if (editingIndex === null) {
+        // add
+        books.push({judul, penulis, tahun, status, peminjam: status === 'Dipinjam' ? peminjam : ''});
+      } else {
+        // update
+        books[editingIndex].judul = judul;
+        books[editingIndex].penulis = penulis;
+        books[editingIndex].tahun = tahun;
+        books[editingIndex].status = status;
+        books[editingIndex].peminjam = status === 'Dipinjam' ? peminjam : '';
+      }
+
+      saveAll();
+      hideModal();
+      render();
+    });
+
+    // Open edit modal
+    window.openEdit = function(index) {
+      editingIndex = index;
+      const b = books[index];
+      modalTitle.textContent = 'Edit Buku';
+      fJudul.value = b.judul;
+      fPenulis.value = b.penulis;
+      fTahun.value = b.tahun;
+      fStatus.value = b.status;
+      fPeminjam.value = b.peminjam || '';
+      showModal();
+    };
+
+    // Remove book
+    window.removeBook = function(index) {
+      if (confirm('Hapus buku ini?')) {
+        books.splice(index,1);
+        saveAll();
+        render();
+      }
+    };
+
+    // Borrow (ask for name)
+    window.borrowBook = function(index) {
+      const name = prompt('Masukkan nama peminjam:');
+      if (!name) return;
+      books[index].status = 'Dipinjam';
+      books[index].peminjam = name.trim();
+      saveAll();
+      render();
+    };
+
+    // Return book
+    window.returnBook = function(index) {
+      if (!confirm('Kembalikan buku ini?')) return;
+      books[index].status = 'Tersedia';
+      books[index].peminjam = '';
+      saveAll();
+      render();
+    };
+
+    // Modal show/hide
+    function showModal() { modalBackdrop.style.display = 'flex'; }
+    function hideModal() { modalBackdrop.style.display = 'none'; editingIndex = null; }
+
+    // Search & filter events
+    searchInput.addEventListener('input', render);
+    filterStatus.addEventListener('change', render);
+
+    // Click outside modal to close
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) hideModal();
+    });
+
+    // initial render
+    render();
+  </script>
+</body>
+</html>
